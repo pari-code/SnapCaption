@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SnapCaption</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f0f2f5;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+        header {
+            font-family: 'Poppins', sans-serif;
+            font-size: 42px;
+            font-weight: 600;
+            color: #222;
+            margin: 30px 0 10px;
+            text-align: center;
+            text-shadow: 1px 2px 4px rgba(0,0,0,0.1);
+        }
+        .container {
+            background: #fff;
+            padding: 40px 60px;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            text-align: center;
+            max-width: 500px;
+            width: 90%;
+            margin-top: 20px;
+        }
+        h2 { 
+            color: #333; 
+            margin-bottom: 25px; 
+        }
+        input[type=file] {
+            display: block;
+            margin: 20px auto;
+            padding: 10px;
+            border: 2px dashed #007BFF;
+            border-radius: 10px;
+            cursor: pointer;
+            width: 80%;
+            transition: border 0.3s;
+        }
+        input[type=file]:hover { border-color: #0056b3; }
+        button {
+            background: #007BFF;
+            color: #fff;
+            border: none;
+            padding: 12px 25px;
+            font-size: 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.3s;
+            margin: 5px;
+        }
+        button:hover { background: #0056b3; }
+        #preview { 
+            max-width: 300px; 
+            display:none; 
+            margin:20px auto; 
+            border-radius: 10px; 
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        #loader { 
+            display:none; 
+            margin-top: 20px; 
+            color: #007BFF; 
+            font-weight: bold; 
+        }
+        .caption-box {
+            margin-top: 20px;
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.05);
+        }
+        .caption-box h3 { margin: 0; color: #007BFF; }
+        .caption-box p { margin-top: 10px; color: #555; font-weight: 500; }
+        .error { color: red; margin-top: 10px; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <header>
+        📸 SnapCaption
+    </header>
+
+    <div class="container">
+        <h2>Upload an image to get a caption</h2>
+
+        <form id="uploadForm" enctype="multipart/form-data">
+            <input type="file" name="image" accept="image/*" required>
+            <button type="submit">Generate Caption</button>
+        </form>
+
+        <img id="preview" src="" alt="Image Preview">
+        <div id="loader">Generating caption...</div>
+
+        <div id="result"></div>
+    </div>
+
+    <script>
+        const fileInput = document.querySelector('input[name="image"]');
+        const preview = document.getElementById('preview');
+        const loader = document.getElementById('loader');
+        const resultDiv = document.getElementById('result');
+
+        // Preview image
+        fileInput.addEventListener('change', function() {
+            const file = this.files[0];
+            if(file){
+                preview.src = URL.createObjectURL(file);
+                preview.style.display = 'block';
+            }
+        });
+
+        // Submit form with AJAX
+        document.getElementById('uploadForm').addEventListener('submit', async function(e){
+            e.preventDefault();
+            loader.style.display = 'block';
+            resultDiv.innerHTML = "";
+
+            const formData = new FormData(this);
+
+            try {
+                const response = await fetch("/analyze", {
+                    method: "POST",
+                    body: formData
+                });
+
+                const data = await response.json();
+                loader.style.display = 'none';
+
+                if(data.error){
+                    resultDiv.innerHTML = `<p class="error">${data.error}</p>`;
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="caption-box">
+                            <h3>${data.caption}</h3>
+                            <button onclick="downloadCaption('${data.caption}')">Download Caption</button>
+                            <button onclick="speakCaption('${data.caption}')">Listen</button>
+                        </div>
+                    `;
+                }
+
+            } catch (err) {
+                loader.style.display = 'none';
+                resultDiv.innerHTML = `<p class="error">Error: ${err.message}</p>`;
+            }
+        });
+
+        // Download caption
+        function downloadCaption(text){
+            const blob = new Blob([text], {type:'text/plain'});
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = "caption.txt";
+            link.click();
+        }
+
+        // Speak caption
+        function speakCaption(text){
+            const msg = new SpeechSynthesisUtterance(text);
+            window.speechSynthesis.speak(msg);
+        }
+    </script>
+</body>
+</html>
