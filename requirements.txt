@@ -1,5 +1,5 @@
 Flask==3.0.3
-azure-ai-vision==1.0.0b3
+gunicorn==21.2.0
+
 azure-core==1.30.2
-requests==2.32.3
-gunicorn
+azure-ai-vision @ https://github.com/Azure/azure-sdk-for-python/releases/download/azure-ai-vision_0.15.1b1/azure_ai_vision-0.15.1b1-py3-none-any.whl
